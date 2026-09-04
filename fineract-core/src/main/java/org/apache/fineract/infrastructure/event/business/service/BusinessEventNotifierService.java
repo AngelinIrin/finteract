@@ -52,4 +52,8 @@ public interface BusinessEventNotifierService {
     void stopExternalEventRecording();
 
     void resetEventRecording();
+
+    default boolean isExternalEventPostingEnabled(String eventType) {
+        return true;
+    }
 }

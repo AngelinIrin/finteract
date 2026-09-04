@@ -29,8 +29,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.apache.fineract.infrastructure.codes.domain.CodeValueRepository;
@@ -52,20 +52,49 @@ import org.apache.fineract.portfolio.workingcapitalloan.domain.NearBreachActionT
 import org.apache.fineract.portfolio.workingcapitalloan.domain.WorkingCapitalLoan;
 import org.apache.fineract.portfolio.workingcapitalloan.domain.WorkingCapitalLoanPeriodFrequencyType;
 import org.apache.fineract.portfolio.workingcapitalloan.domain.WorkingCapitalLoanTransaction;
+import org.apache.fineract.portfolio.workingcapitalloan.domain.WorkingCapitalLoanTransactionFinder;
 import org.apache.fineract.portfolio.workingcapitalloan.repository.WorkingCapitalLoanBreachActionRepository;
+import org.apache.fineract.portfolio.workingcapitalloan.repository.WorkingCapitalLoanChargeRepository;
 import org.apache.fineract.portfolio.workingcapitalloan.repository.WorkingCapitalLoanTransactionRepository;
 import org.apache.fineract.portfolio.workingcapitalloanproduct.domain.WorkingCapitalLoanProductRelatedDetail;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 public class WorkingCapitalLoanDataValidator {
 
     private final FromJsonHelper fromApiJsonHelper;
     private final ExpectedDisbursementDateValidator expectedDisbursementDateValidator;
     private final WorkingCapitalLoanTransactionRepository transactionRepository;
+    private final WorkingCapitalLoanTransactionFinder transactionFinder;
     private final CodeValueRepository codeValueRepository;
     private final WorkingCapitalLoanBreachActionRepository breachActionRepository;
+    private final WorkingCapitalLoanChargeRepository chargeRepository;
+
+    @Autowired
+    public WorkingCapitalLoanDataValidator(FromJsonHelper fromApiJsonHelper,
+            ExpectedDisbursementDateValidator expectedDisbursementDateValidator,
+            WorkingCapitalLoanTransactionRepository transactionRepository,
+            WorkingCapitalLoanTransactionFinder transactionFinder,
+            CodeValueRepository codeValueRepository,
+            WorkingCapitalLoanBreachActionRepository breachActionRepository,
+            WorkingCapitalLoanChargeRepository chargeRepository) {
+        this.fromApiJsonHelper = fromApiJsonHelper;
+        this.expectedDisbursementDateValidator = expectedDisbursementDateValidator;
+        this.transactionRepository = transactionRepository;
+        this.transactionFinder = transactionFinder;
+        this.codeValueRepository = codeValueRepository;
+        this.breachActionRepository = breachActionRepository;
+        this.chargeRepository = chargeRepository;
+    }
+
+    public WorkingCapitalLoanDataValidator(FromJsonHelper fromApiJsonHelper,
+            ExpectedDisbursementDateValidator expectedDisbursementDateValidator,
+            WorkingCapitalLoanTransactionRepository transactionRepository,
+            CodeValueRepository codeValueRepository,
+            WorkingCapitalLoanBreachActionRepository breachActionRepository) {
+        this(fromApiJsonHelper, expectedDisbursementDateValidator, transactionRepository, null, codeValueRepository, breachActionRepository, null);
+    }
 
     // Per requirement: only principal, discount, approved date, expected disbursement date, and notes
     private static final Set<String> APPROVAL_SUPPORTED_PARAMETERS = new HashSet<>(
@@ -918,6 +947,11 @@ public class WorkingCapitalLoanDataValidator {
                 || !loan.getLoanProduct().getConfigurableAttributes().isDiscountDefaultOverridable();
     }
 
+    private static final Set<String> WRITE_OFF_SUPPORTED_PARAMETERS = new HashSet<>(
+            Arrays.asList("locale", "dateFormat", WorkingCapitalLoanConstants.transactionDateParamName,
+                    WorkingCapitalLoanConstants.writeoffReasonIdParamName, WorkingCapitalLoanConstants.noteParamName,
+                    WorkingCapitalLoanConstants.externalIdParameterName));
+
     public void validateUndoTransaction(JsonCommand command, WorkingCapitalLoan loan, WorkingCapitalLoanTransaction transaction) {
         final String json = command.getJsonCommand();
         if (StringUtils.isBlank(json)) {
@@ -931,10 +965,148 @@ public class WorkingCapitalLoanDataValidator {
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
                 .resource(WorkingCapitalLoanConstants.RESOURCE_NAME);
 
+        if (loan != null && loan.getLoanStatus() == LoanStatus.CLOSED_WRITTEN_OFF) {
+            baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("error.msg.wc.loan.undo.transaction.not.allowed.for.loan.status");
+        }
+
         if (transaction.isReversed()) {
             baseDataValidator.reset().parameter("transaction").failWithCode("transaction.already.undone", transaction.getId());
         }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
+
+    public void validateWriteOff(final JsonCommand command, final WorkingCapitalLoan loan) {
+        final String json = command.getJsonCommand();
+        if (StringUtils.isBlank(json)) {
+            throw new InvalidJsonException();
+        }
+
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, WRITE_OFF_SUPPORTED_PARAMETERS);
+
+        final JsonElement element = this.fromApiJsonHelper.parse(json);
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                .resource(WorkingCapitalLoanConstants.RESOURCE_NAME);
+
+        if (loan == null || !loan.isOpen()) {
+            baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("error.msg.wc.loan.is.not.active");
+        }
+
+        final LocalDate transactionDate = this.fromApiJsonHelper
+                .extractLocalDateNamed(WorkingCapitalLoanConstants.transactionDateParamName, element);
+        baseDataValidator.reset().parameter(WorkingCapitalLoanConstants.transactionDateParamName).value(transactionDate).notNull();
+
+        if (transactionDate != null) {
+            if (DateUtils.isDateInTheFuture(transactionDate)) {
+                baseDataValidator.reset().parameter(WorkingCapitalLoanConstants.transactionDateParamName)
+                        .failWithCode("cannot.be.a.future.date");
+            } else if (transactionFinder != null && loan != null) {
+                final Optional<LocalDate> lastUserTxnDate = transactionFinder.getLastUserTransactionDate(loan);
+                if (lastUserTxnDate.isPresent() && transactionDate.isBefore(lastUserTxnDate.get())) {
+                    baseDataValidator.reset().parameter(WorkingCapitalLoanConstants.transactionDateParamName)
+                            .failWithCode("cannot.be.before.last.transaction.date");
+                }
+            }
+        }
+
+        final Long writeOffReasonId = this.fromApiJsonHelper
+                .extractLongNamed(WorkingCapitalLoanConstants.writeoffReasonIdParamName, element);
+        baseDataValidator.reset().parameter(WorkingCapitalLoanConstants.writeoffReasonIdParamName).value(writeOffReasonId).ignoreIfNull()
+                .integerGreaterThanZero();
+
+        final String note = this.fromApiJsonHelper.extractStringNamed(WorkingCapitalLoanConstants.noteParamName, element);
+        baseDataValidator.reset().parameter(WorkingCapitalLoanConstants.noteParamName).value(note).ignoreIfNull()
+                .notExceedingLengthOf(NOTE_MAX_LENGTH);
+
+        throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
+
+    public void validateUndoWriteOff(final JsonCommand command, final WorkingCapitalLoan loan) {
+        if (loan == null || loan.getLoanStatus() != LoanStatus.CLOSED_WRITTEN_OFF) {
+            final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+            final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                    .resource(WorkingCapitalLoanConstants.RESOURCE_NAME);
+            baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("error.msg.wc.loan.is.not.written.off");
+            throwExceptionIfValidationWarningsExist(dataValidationErrors);
+        }
+
+        final String json = command != null ? command.getJsonCommand() : null;
+        if (StringUtils.isNotBlank(json)) {
+            final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+            this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, UNDO_TRANSACTION_SUPPORTED_PARAMETERS);
+        }
+    }
+
+    private static final Set<String> CHARGE_OFF_SUPPORTED_PARAMETERS = new HashSet<>(
+            Arrays.asList("locale", "dateFormat", WorkingCapitalLoanConstants.transactionDateParamName,
+                    WorkingCapitalLoanConstants.chargeOffReasonIdParamName, WorkingCapitalLoanConstants.noteParamName,
+                    WorkingCapitalLoanConstants.externalIdParameterName));
+
+    public void validateChargeOff(final JsonCommand command, final WorkingCapitalLoan loan) {
+        final String json = command.getJsonCommand();
+        if (StringUtils.isBlank(json)) {
+            throw new InvalidJsonException();
+        }
+
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, CHARGE_OFF_SUPPORTED_PARAMETERS);
+
+        final JsonElement element = this.fromApiJsonHelper.parse(json);
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                .resource(WorkingCapitalLoanConstants.RESOURCE_NAME);
+
+        if (loan == null || !loan.isOpen()) {
+            baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("error.msg.wc.loan.is.not.active");
+        }
+        if (loan != null && loan.isChargedOff()) {
+            baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("error.msg.wc.loan.already.charged.off");
+        }
+
+        final LocalDate transactionDate = this.fromApiJsonHelper
+                .extractLocalDateNamed(WorkingCapitalLoanConstants.transactionDateParamName, element);
+        baseDataValidator.reset().parameter(WorkingCapitalLoanConstants.transactionDateParamName).value(transactionDate).notNull();
+
+        if (transactionDate != null) {
+            if (DateUtils.isDateInTheFuture(transactionDate)) {
+                baseDataValidator.reset().parameter(WorkingCapitalLoanConstants.transactionDateParamName)
+                        .failWithCode("cannot.be.a.future.date");
+            } else if (transactionFinder != null && loan != null) {
+                final Optional<LocalDate> lastUserTxnDate = transactionFinder.getLastUserTransactionDate(loan);
+                if (lastUserTxnDate.isPresent() && transactionDate.isBefore(lastUserTxnDate.get())) {
+                    baseDataValidator.reset().parameter(WorkingCapitalLoanConstants.transactionDateParamName)
+                            .failWithCode("cannot.be.before.last.transaction.date");
+                }
+            }
+        }
+
+        final Long chargeOffReasonId = this.fromApiJsonHelper
+                .extractLongNamed(WorkingCapitalLoanConstants.chargeOffReasonIdParamName, element);
+        baseDataValidator.reset().parameter(WorkingCapitalLoanConstants.chargeOffReasonIdParamName).value(chargeOffReasonId).ignoreIfNull()
+                .integerGreaterThanZero();
+
+        final String note = this.fromApiJsonHelper.extractStringNamed(WorkingCapitalLoanConstants.noteParamName, element);
+        baseDataValidator.reset().parameter(WorkingCapitalLoanConstants.noteParamName).value(note).ignoreIfNull()
+                .notExceedingLengthOf(NOTE_MAX_LENGTH);
+
+        throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
+
+    public void validateUndoChargeOff(final JsonCommand command, final WorkingCapitalLoan loan) {
+        if (loan == null || !loan.isChargedOff()) {
+            final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+            final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                    .resource(WorkingCapitalLoanConstants.RESOURCE_NAME);
+            baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("error.msg.wc.loan.is.not.charged.off");
+            throwExceptionIfValidationWarningsExist(dataValidationErrors);
+        }
+
+        final String json = command != null ? command.getJsonCommand() : null;
+        if (StringUtils.isNotBlank(json)) {
+            final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+            this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, UNDO_TRANSACTION_SUPPORTED_PARAMETERS);
+        }
     }
 }

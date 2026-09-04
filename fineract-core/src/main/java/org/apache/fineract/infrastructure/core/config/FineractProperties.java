@@ -453,6 +453,8 @@ public class FineractProperties {
     public static class FineractJpaProperties {
 
         private boolean statementLoggingEnabled;
+        private int expressionQueryCacheMaxSize = 5000;
+        private int updateCallCacheMaxSize = 5000;
     }
 
     @Getter

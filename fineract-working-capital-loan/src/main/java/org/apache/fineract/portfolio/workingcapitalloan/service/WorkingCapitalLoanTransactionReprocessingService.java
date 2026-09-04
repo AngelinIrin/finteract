@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.portfolio.workingcapitalloan.service;
 
+import java.time.LocalDate;
 import java.util.List;
 import org.apache.fineract.portfolio.workingcapitalloan.domain.WorkingCapitalLoan;
 import org.apache.fineract.portfolio.workingcapitalloan.domain.WorkingCapitalLoanTransaction;
@@ -56,4 +57,6 @@ public interface WorkingCapitalLoanTransactionReprocessingService {
      * previously overpaid loan must fold the former overpayment back into principal.
      */
     void reprocessTransactionsForChargeFreeUndo(WorkingCapitalLoan loan);
+
+    void reprocessChargeFreeSuffix(WorkingCapitalLoan loan, LocalDate transactionDate, WorkingCapitalLoanTransaction newlyInserted);
 }

@@ -194,6 +194,27 @@ public class WorkingCapitalLoanTransaction extends AbstractAuditableWithUTCDateT
         return transaction;
     }
 
+    public static WorkingCapitalLoanTransaction chargeOff(final WorkingCapitalLoan loan, final BigDecimal amount,
+            final LocalDate transactionDate, final ExternalId externalId) {
+        final WorkingCapitalLoanTransaction txn = new WorkingCapitalLoanTransaction();
+        txn.initialize(loan, LoanTransactionType.CHARGE_OFF, transactionDate, amount, null, null, externalId);
+        return txn;
+    }
+
+    public static WorkingCapitalLoanTransaction writeOff(final WorkingCapitalLoan loan, final BigDecimal amount,
+            final LocalDate transactionDate, final ExternalId externalId) {
+        final WorkingCapitalLoanTransaction txn = new WorkingCapitalLoanTransaction();
+        txn.initialize(loan, LoanTransactionType.WRITEOFF, transactionDate, amount, null, null, externalId);
+        return txn;
+    }
+
+    public static WorkingCapitalLoanTransaction accrual(final WorkingCapitalLoan loan, final ExternalId externalId,
+            final BigDecimal amount, final LocalDate transactionDate) {
+        final WorkingCapitalLoanTransaction txn = new WorkingCapitalLoanTransaction();
+        txn.initialize(loan, LoanTransactionType.ACCRUAL, transactionDate, amount, null, null, externalId);
+        return txn;
+    }
+
     private void initialize(final WorkingCapitalLoan loan, final LoanTransactionType transactionType, final LocalDate transactionDate,
             final BigDecimal amount, final PaymentDetail paymentDetail, final CodeValue classification, final ExternalId externalId) {
         this.wcLoan = loan;

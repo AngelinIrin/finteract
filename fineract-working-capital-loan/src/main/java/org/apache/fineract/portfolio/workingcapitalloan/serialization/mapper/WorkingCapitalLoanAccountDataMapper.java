@@ -80,7 +80,7 @@ public interface WorkingCapitalLoanAccountDataMapper {
     @Mapping(source = "penaltyPaid", target = "penaltyChargesPaid")
     @Mapping(source = "penaltyOutstanding", target = "penaltyChargesOutstanding")
     @Mapping(target = "totalChargeAmount", source = ".", qualifiedByName = "toTotalChargeAmount")
-    @Mapping(source = "principalAdjustment", target = "principalAdjustments")
+    @Mapping(target = "principalAdjustments", ignore = true)
     @Mapping(target = "principalWrittenOff", ignore = true)
     @Mapping(target = "feeChargesWrittenOff", ignore = true)
     @Mapping(target = "penaltyChargesWrittenOff", ignore = true)
@@ -102,10 +102,15 @@ public interface WorkingCapitalLoanAccountDataMapper {
     @Mapping(target = "totalRepaymentTransactionReversed", ignore = true)
     @Mapping(target = "totalPayment", ignore = true)
     @Mapping(target = "totalPaymentReversed", ignore = true)
+    @Mapping(target = "overdueSinceDate", ignore = true)
     WorkingCapitalLoanSummaryDataV1 map(WorkingCapitalLoanSummaryData source);
 
     @Mapping(source = "delinquentPrincipal", target = "totalDelinquentAmount")
     @Mapping(target = "delinquencySchedule", ignore = true)
+    @Mapping(target = "lastPaymentDate", ignore = true)
+    @Mapping(target = "lastPaymentAmount", ignore = true)
+    @Mapping(target = "lastRepaymentDate", ignore = true)
+    @Mapping(target = "lastRepaymentAmount", ignore = true)
     WorkingCapitalLoanCollectionDataV1 map(WorkingCapitalLoanCollectionData source);
 
     @Mapping(target = "amountAccrued", ignore = true)
@@ -125,6 +130,8 @@ public interface WorkingCapitalLoanAccountDataMapper {
 
     WorkingCapitalLoanDelinquencyScheduleTagDataV1 map(WorkingCapitalLoanRangeScheduleDelinquencyData source);
 
+    @Mapping(target = "paidAmount", ignore = true)
+    @Mapping(target = "reset", ignore = true)
     WorkingCapitalLoanBreachSchedulePeriodDataV1 map(WorkingCapitalLoanBreachScheduleData source);
 
     List<WorkingCapitalLoanBreachSchedulePeriodDataV1> mapBreachSchedule(List<WorkingCapitalLoanBreachScheduleData> source);

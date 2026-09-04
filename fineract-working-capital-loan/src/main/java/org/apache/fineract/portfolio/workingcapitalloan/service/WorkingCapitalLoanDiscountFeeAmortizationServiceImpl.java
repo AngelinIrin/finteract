@@ -116,6 +116,20 @@ public class WorkingCapitalLoanDiscountFeeAmortizationServiceImpl implements Wor
         loan.getBalance().setRealizedIncomeFromDiscountFee(queryNetAmortized(loan.getId()));
     }
 
+    @Override
+    @Transactional
+    public void processFinalDiscountFeeAmortizationOnChargeOff(final WorkingCapitalLoan loan,
+            final WorkingCapitalLoanTransaction chargeOffTransaction) {
+        recalculateRealizedIncome(loan);
+    }
+
+    @Override
+    @Transactional
+    public void undoDiscountFeeAmortizationOnChargeOff(final WorkingCapitalLoan loan,
+            final WorkingCapitalLoanTransaction chargeOffTransaction) {
+        recalculateRealizedIncome(loan);
+    }
+
     private BigDecimal queryNetAmortized(final Long loanId) {
         return transactionRepository.sumNetAmortization(loanId, LoanTransactionType.DISCOUNT_FEE_AMORTIZATION,
                 LoanTransactionType.DISCOUNT_FEE_AMORTIZATION_ADJUSTMENT);

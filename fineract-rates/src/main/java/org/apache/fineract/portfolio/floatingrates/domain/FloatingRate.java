@@ -132,6 +132,22 @@ public class FloatingRate extends AbstractAuditableWithUTCDateTimeCustom<Long> {
         return this.floatingRatePeriods;
     }
 
+    public void setName(final String name) {
+        this.name = name;
+    }
+
+    public void setBaseLendingRate(final boolean isBaseLendingRate) {
+        this.isBaseLendingRate = isBaseLendingRate;
+    }
+
+    public void setActive(final boolean isActive) {
+        this.isActive = isActive;
+    }
+
+    public void replaceRatePeriods(final List<FloatingRatePeriod> newRatePeriods) {
+        updateRatePeriods(newRatePeriods);
+    }
+
     public Map<String, Object> update(final JsonCommand command) {
 
         final Map<String, Object> actualChanges = new LinkedHashMap<>(9);

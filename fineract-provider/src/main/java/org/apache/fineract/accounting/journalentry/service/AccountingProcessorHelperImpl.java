@@ -109,6 +109,91 @@ public class AccountingProcessorHelperImpl implements AccountingProcessorHelper 
     private final ChargeRepositoryWrapper chargeRepositoryWrapper;
     private final BusinessEventNotifierService businessEventNotifierService;
 
+    public LoanDTO populateLoanDtoFromDTO(
+            final org.apache.fineract.portfolio.loanaccount.data.AccountingBridgeDataDTO accountingBridgeData) {
+        final Long loanId = accountingBridgeData.getLoanId();
+        final Long loanProductId = accountingBridgeData.getLoanProductId();
+        final Long officeId = accountingBridgeData.getOfficeId();
+        final String currencyCode = accountingBridgeData.getCurrencyCode();
+        final List<LoanTransactionDTO> newLoanTransactions = new ArrayList<>();
+        boolean isAccountTransfer = accountingBridgeData.isAccountTransfer();
+        boolean isLoanMarkedAsChargeOff = accountingBridgeData.isChargeOff();
+        boolean isLoanMarkedAsFraud = accountingBridgeData.isFraud();
+        final Long chargeOffReasonCodeValue = accountingBridgeData.getChargeOffReasonCodeValue();
+        final boolean isLoanMarkedAsWrittenOff = accountingBridgeData.isWrittenOff();
+        final boolean cashBasedAccountingEnabled = accountingBridgeData.isCashBasedAccountingEnabled();
+        final boolean upfrontAccrualBasedAccountingEnabled = accountingBridgeData.isUpfrontAccrualBasedAccountingEnabled();
+        final boolean periodicAccrualBasedAccountingEnabled = accountingBridgeData.isPeriodicAccrualBasedAccountingEnabled();
+        final boolean merchantBuyDownFee = accountingBridgeData.isMerchantBuyDownFee();
+
+        final List<org.apache.fineract.portfolio.loanaccount.data.AccountingBridgeLoanTransactionDTO> loanTransactionDTOs = accountingBridgeData.getNewLoanTransactions();
+
+        for (final org.apache.fineract.portfolio.loanaccount.data.AccountingBridgeLoanTransactionDTO loanTxnDto : loanTransactionDTOs) {
+            final Long transactionOfficeId = loanTxnDto.getOfficeId();
+            final String transactionId = loanTxnDto.getId().toString();
+            final LocalDate transactionDate = loanTxnDto.getDate();
+            final org.apache.fineract.portfolio.loanaccount.data.LoanTransactionEnumData transactionType = loanTxnDto.getType();
+            final BigDecimal amount = loanTxnDto.getAmount();
+            final BigDecimal principal = loanTxnDto.getPrincipalPortion();
+            final BigDecimal interest = loanTxnDto.getInterestPortion();
+            final BigDecimal fees = loanTxnDto.getFeeChargesPortion();
+            final BigDecimal penalties = loanTxnDto.getPenaltyChargesPortion();
+            final BigDecimal overPayments = loanTxnDto.getOverPaymentPortion();
+            final boolean reversed = loanTxnDto.isReversed();
+            final Long paymentTypeId = loanTxnDto.getPaymentTypeId();
+            final String chargeRefundChargeType = loanTxnDto.getChargeRefundChargeType();
+            final org.apache.fineract.portfolio.loanaccount.data.LoanChargeData loanChargeData = loanTxnDto.getLoanChargeData();
+
+            final List<ChargePaymentDTO> feePaymentDetails = new ArrayList<>();
+            final List<ChargePaymentDTO> penaltyPaymentDetails = new ArrayList<>();
+            final List<ChargeTaxPaymentDTO> chargeTaxPayments = new ArrayList<>();
+            if (loanTxnDto.getLoanChargesPaid() != null) {
+                List<org.apache.fineract.portfolio.loanaccount.data.LoanChargePaidByDTO> loanChargesPaidData = loanTxnDto.getLoanChargesPaid();
+                for (final org.apache.fineract.portfolio.loanaccount.data.LoanChargePaidByDTO loanChargePaid : loanChargesPaidData) {
+                    final Long chargeId = loanChargePaid.getChargeId();
+                    final Long loanChargeId = loanChargePaid.getLoanChargeId();
+                    final boolean isPenalty = loanChargePaid.getIsPenalty();
+                    final BigDecimal chargeAmountPaid = loanChargePaid.getAmount();
+                    final ChargePaymentDTO chargePaymentDTO = new ChargePaymentDTO(chargeId, chargeAmountPaid, loanChargeId);
+                    if (isPenalty) {
+                        penaltyPaymentDetails.add(chargePaymentDTO);
+                    } else {
+                        feePaymentDetails.add(chargePaymentDTO);
+                    }
+                    for (org.apache.fineract.portfolio.loanaccount.data.ChargeTaxDetailDTO taxDetail : loanChargePaid.getTaxDetails()) {
+                        chargeTaxPayments.add(
+                                new ChargeTaxPaymentDTO(loanChargeId, taxDetail.getCreditAccountId(), taxDetail.getAmount(), isPenalty));
+                    }
+                }
+            }
+
+            boolean localIsAccountTransfer = isAccountTransfer;
+            if (!localIsAccountTransfer) {
+                localIsAccountTransfer = this.accountTransfersReadPlatformService.isAccountTransfer(Long.parseLong(transactionId),
+                        org.apache.fineract.portfolio.account.PortfolioAccountType.LOAN);
+            }
+
+            BigDecimal principalPaid = loanTxnDto.getPrincipalPaid();
+            BigDecimal feePaid = loanTxnDto.getFeePaid();
+            BigDecimal penaltyPaid = loanTxnDto.getPenaltyPaid();
+
+            final LoanTransactionDTO transaction = new LoanTransactionDTO(transactionOfficeId, paymentTypeId, transactionId,
+                    transactionDate, transactionType, amount, principal, interest, fees, penalties, overPayments, reversed,
+                    penaltyPaymentDetails, feePaymentDetails, localIsAccountTransfer, chargeRefundChargeType, loanChargeData, principalPaid,
+                    feePaid, penaltyPaid);
+
+            transaction.setLoanToLoanTransfer(loanTxnDto.isLoanToLoanTransfer());
+            transaction.setChargeTaxPayments(chargeTaxPayments);
+            newLoanTransactions.add(transaction);
+        }
+
+        return new LoanDTO(loanId, loanProductId, officeId, currencyCode, cashBasedAccountingEnabled, upfrontAccrualBasedAccountingEnabled,
+                periodicAccrualBasedAccountingEnabled, newLoanTransactions, isLoanMarkedAsChargeOff, isLoanMarkedAsFraud,
+                chargeOffReasonCodeValue, isLoanMarkedAsWrittenOff, merchantBuyDownFee,
+                accountingBridgeData.getBuydownFeeClassificationCodeValue(),
+                accountingBridgeData.getCapitalizedIncomeClassificationCodeValue(), accountingBridgeData.getWriteOffReasonCodeValue());
+    }
+
     @Override
     public LoanDTO populateLoanDtoFromDTO(final AccountingBridgeDataDTO accountingBridgeData) {
         final Long loanId = accountingBridgeData.getLoanId();

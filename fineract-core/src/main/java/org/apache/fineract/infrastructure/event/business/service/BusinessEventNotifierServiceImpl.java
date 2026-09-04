@@ -140,6 +140,11 @@ public class BusinessEventNotifierServiceImpl implements BusinessEventNotifierSe
         return fineractProperties.getEvents().getExternal().isEnabled();
     }
 
+    @Override
+    public boolean isExternalEventPostingEnabled(String eventType) {
+        return isExternalEventPostingEnabled();
+    }
+
     private void throwExceptionIfBulkEvent(BusinessEvent<?> businessEvent) {
         if (businessEvent instanceof BulkBusinessEvent) {
             throw new IllegalArgumentException("BulkBusinessEvent cannot be raised directly");

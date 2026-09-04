@@ -25,6 +25,7 @@ public final class WorkingCapitalLoanConstants {
     }
 
     public static final String WCL_RESOURCE_NAME = "WORKINGCAPITALLOAN";
+    public static final String WORKING_CAPITAL_LOAN_TRANSACTION_IDENTIFIER = "WC";
 
     // Common request parameters (locale, dateFormat, id)
     public static final String localeParameterName = "locale";
@@ -105,6 +106,11 @@ public final class WorkingCapitalLoanConstants {
     public static final String nearBreachThresholdParamName = "nearBreachThreshold";
     public static final String nearBreachFrequencyParamName = "nearBreachFrequency";
     public static final String nearBreachFrequencyTypeParamName = "nearBreachFrequencyType";
+
+    public static final String writeoffReasonIdParamName = "writeoffReasonId";
+    public static final String chargeOffReasonIdParamName = "chargeOffReasonId";
+    public static final String EIR_NOT_CALCULABLE_USER_MESSAGE = "error.msg.wc.loan.eir.not.calculable";
+    public static final String fraudParamName = "fraud";
 
     // Loan origination parameters
     public static final String originatorsParameterName = "originators";

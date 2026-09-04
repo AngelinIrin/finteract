@@ -80,4 +80,17 @@ public final class WorkingCapitalLoanDelinquencyPauseUtils {
         return calculatePauseExtensionDays(pauseStart, originalPauseEnd) - calculatePauseExtensionDays(pauseStart, resumeDate);
     }
 
+    public static LocalDate extendToDateByRecordedPauses(final LocalDate fromDate, final LocalDate toDate,
+            final List<WorkingCapitalLoanDelinquencyAction> recordedPauses) {
+        if (fromDate == null || toDate == null || recordedPauses == null || recordedPauses.isEmpty()) {
+            return toDate;
+        }
+        LocalDate extendedTo = toDate;
+        for (final WorkingCapitalLoanDelinquencyAction pause : recordedPauses) {
+            final LocalDate effectiveEnd = resolveEffectivePauseEnd(pause, recordedPauses);
+            final long days = calculatePauseExtensionDays(pause.getStartDate(), effectiveEnd);
+            extendedTo = extendedTo.plusDays(days);
+        }
+        return extendedTo;
+    }
 }

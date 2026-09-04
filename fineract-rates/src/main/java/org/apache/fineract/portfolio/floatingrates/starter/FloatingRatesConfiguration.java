@@ -22,12 +22,17 @@ import org.apache.fineract.portfolio.floatingrates.domain.FloatingRateRepository
 import org.apache.fineract.portfolio.floatingrates.serialization.FloatingRateDataValidator;
 import org.apache.fineract.portfolio.floatingrates.service.FloatingRateWritePlatformService;
 import org.apache.fineract.portfolio.floatingrates.service.FloatingRateWritePlatformServiceImpl;
+import org.apache.fineract.portfolio.floatingrates.service.FloatingRateWriteService;
+import org.apache.fineract.portfolio.floatingrates.service.FloatingRateWriteServiceImpl;
 import org.apache.fineract.portfolio.floatingrates.service.FloatingRatesReadPlatformService;
 import org.apache.fineract.portfolio.floatingrates.service.FloatingRatesReadPlatformServiceImpl;
+import org.apache.fineract.portfolio.floatingrates.service.FloatingRatesReadService;
+import org.apache.fineract.portfolio.floatingrates.service.FloatingRatesReadServiceImpl;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
+import jakarta.validation.Validator;
 
 @Configuration
 public class FloatingRatesConfiguration {
@@ -39,9 +44,22 @@ public class FloatingRatesConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(FloatingRatesReadService.class)
+    public FloatingRatesReadService floatingRatesReadService(JdbcTemplate jdbcTemplate) {
+        return new FloatingRatesReadServiceImpl(jdbcTemplate);
+    }
+
+    @Bean
     @ConditionalOnMissingBean(FloatingRateWritePlatformService.class)
     public FloatingRateWritePlatformService floatingRateWritePlatformService(FloatingRateDataValidator fromApiJsonDeserializer,
             FloatingRateRepositoryWrapper floatingRateRepository) {
         return new FloatingRateWritePlatformServiceImpl(fromApiJsonDeserializer, floatingRateRepository);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(FloatingRateWriteService.class)
+    public FloatingRateWriteService floatingRateWriteService(Validator validator,
+            FloatingRateRepositoryWrapper floatingRateRepository) {
+        return new FloatingRateWriteServiceImpl(validator, floatingRateRepository);
     }
 }

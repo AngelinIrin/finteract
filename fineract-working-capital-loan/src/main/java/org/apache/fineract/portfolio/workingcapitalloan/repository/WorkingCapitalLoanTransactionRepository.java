@@ -88,4 +88,38 @@ public interface WorkingCapitalLoanTransactionRepository extends JpaRepository<W
             """)
     List<TransactionDateAndAmountHolder> fetchTransactionDateAndAmount(@Param("wcLoanId") Long wcLoanId,
             @Param("transactionTypes") List<LoanTransactionType> transactionTypes);
+
+    @Query("""
+            select t from WorkingCapitalLoanTransaction t
+            where t.wcLoan.id = :wcLoanId and t.transactionType not in :types and t.reversed = false
+            order by t.transactionDate desc, t.id desc
+            """)
+    List<WorkingCapitalLoanTransaction> findActiveExcludingTypesOrderByDateDesc(@Param("wcLoanId") Long wcLoanId,
+            @Param("types") List<LoanTransactionType> types, Pageable pageable);
+
+    @Query("""
+            select t from WorkingCapitalLoanTransaction t
+            where t.wcLoan.id = :wcLoanId and t.transactionType in :types and t.reversed = false
+            order by t.transactionDate desc, t.id desc
+            """)
+    List<WorkingCapitalLoanTransaction> findActiveByTypesOrderByDateDesc(@Param("wcLoanId") Long wcLoanId,
+            @Param("types") List<LoanTransactionType> types, Pageable pageable);
+
+    @Query("""
+            select new org.apache.fineract.portfolio.workingcapitalloan.data.TransactionTypeTotalHolder(t.transactionType, t.reversed, coalesce(sum(t.transactionAmount), 0))
+            from WorkingCapitalLoanTransaction t
+            where t.wcLoan.id = :wcLoanId and t.transactionType in :transactionTypes
+            group by t.transactionType, t.reversed
+            """)
+    List<org.apache.fineract.portfolio.workingcapitalloan.data.TransactionTypeTotalHolder> fetchTotalsPerTypeAndReversed(@Param("wcLoanId") Long wcLoanId,
+            @Param("transactionTypes") List<LoanTransactionType> transactionTypes);
+
+    @Query("""
+            select case when count(t) > 0 then true else false end
+            from WorkingCapitalLoanTransaction t
+            where t.wcLoan.id = :wcLoanId and t.reversed = false
+              and (t.transactionDate > :transactionDate or (t.transactionDate = :transactionDate and t.createdDate > :createdDateTime))
+            """)
+    boolean existsLaterTransaction(@Param("wcLoanId") Long wcLoanId, @Param("transactionDate") LocalDate transactionDate,
+            @Param("createdDateTime") java.time.OffsetDateTime createdDateTime);
 }

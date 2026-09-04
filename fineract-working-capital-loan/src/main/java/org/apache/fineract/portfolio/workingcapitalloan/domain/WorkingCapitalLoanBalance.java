@@ -90,6 +90,22 @@ public class WorkingCapitalLoanBalance extends AbstractAuditableWithUTCDateTimeC
     @Setter
     private BigDecimal totalDiscountFeeAdjustment = BigDecimal.ZERO;
 
+    @Column(name = "principal_written_off", scale = 6, precision = 19)
+    @Setter
+    private BigDecimal principalWrittenOff = BigDecimal.ZERO;
+
+    @Column(name = "fee_written_off", scale = 6, precision = 19)
+    @Setter
+    private BigDecimal feeWrittenOff = BigDecimal.ZERO;
+
+    @Column(name = "penalty_written_off", scale = 6, precision = 19)
+    @Setter
+    private BigDecimal penaltyWrittenOff = BigDecimal.ZERO;
+
+    @Column(name = "breach_past_due_amount", scale = 6, precision = 19)
+    @Setter
+    private BigDecimal breachPastDueAmount = BigDecimal.ZERO;
+
     @Version
     @Column(name = "version")
     private Integer version;
@@ -130,5 +146,13 @@ public class WorkingCapitalLoanBalance extends AbstractAuditableWithUTCDateTimeC
         return MathUtil
                 .subtract(MathUtil.subtract(getTotalDiscountFee(), getTotalDiscountFeeAdjustment()), getRealizedIncomeFromDiscountFee())
                 .max(BigDecimal.ZERO);
+    }
+
+    public boolean isOverpaid() {
+        return overpaymentAmount != null && overpaymentAmount.compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    public boolean isPaidInFull() {
+        return getTotalOutstanding().compareTo(BigDecimal.ZERO) == 0;
     }
 }

@@ -126,7 +126,7 @@ public class JournalEntryWritePlatformServiceJpaRepositoryImpl implements Journa
     private final AccountingProcessorForLoanFactory accountingProcessorForLoanFactory;
     private final AccountingProcessorForSavingsFactory accountingProcessorForSavingsFactory;
     private final AccountingProcessorForSharesFactory accountingProcessorForSharesFactory;
-    private final AccountingProcessorHelper helper;
+    private final AccountingProcessorHelperImpl helper;
     private final JournalEntryCommandFromApiJsonDeserializer fromApiJsonDeserializer;
     private final AccountingRuleRepository accountingRuleRepository;
     private final GLAccountReadPlatformService glAccountReadPlatformService;

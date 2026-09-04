@@ -54,6 +54,10 @@ public class WorkingCapitalLoanTransactionAllocation extends AbstractAuditableWi
     @Setter
     private BigDecimal penaltyChargesPortion;
 
+    @Column(name = "overpayment_portion", scale = 6, precision = 19)
+    @Setter
+    private BigDecimal overpaymentPortion = BigDecimal.ZERO;
+
     @Version
     @Column(name = "version")
     private Integer version;
@@ -72,11 +76,18 @@ public class WorkingCapitalLoanTransactionAllocation extends AbstractAuditableWi
 
     public static WorkingCapitalLoanTransactionAllocation forPortions(final WorkingCapitalLoanTransaction transaction,
             final BigDecimal principalAmount, final BigDecimal feeAmount, final BigDecimal penaltyAmount) {
+        return forPortions(transaction, principalAmount, feeAmount, penaltyAmount, BigDecimal.ZERO);
+    }
+
+    public static WorkingCapitalLoanTransactionAllocation forPortions(final WorkingCapitalLoanTransaction transaction,
+            final BigDecimal principalAmount, final BigDecimal feeAmount, final BigDecimal penaltyAmount,
+            final BigDecimal overpaymentAmount) {
         final WorkingCapitalLoanTransactionAllocation allocation = new WorkingCapitalLoanTransactionAllocation();
         allocation.wcLoanTransaction = transaction;
         allocation.principalPortion = MathUtil.nullToZero(principalAmount);
         allocation.feeChargesPortion = MathUtil.nullToZero(feeAmount);
         allocation.penaltyChargesPortion = MathUtil.nullToZero(penaltyAmount);
+        allocation.overpaymentPortion = MathUtil.nullToZero(overpaymentAmount);
         return allocation;
     }
 
@@ -108,5 +119,10 @@ public class WorkingCapitalLoanTransactionAllocation extends AbstractAuditableWi
         allocation.feeChargesPortion = isPenalty ? BigDecimal.ZERO : MathUtil.nullToZero(amount);
         allocation.penaltyChargesPortion = isPenalty ? MathUtil.nullToZero(amount) : BigDecimal.ZERO;
         return allocation;
+    }
+
+    public static WorkingCapitalLoanTransactionAllocation forChargeAccrual(final WorkingCapitalLoanTransaction transaction,
+            final BigDecimal amount, final boolean isPenalty) {
+        return forChargeAdjustment(transaction, amount, isPenalty);
     }
 }

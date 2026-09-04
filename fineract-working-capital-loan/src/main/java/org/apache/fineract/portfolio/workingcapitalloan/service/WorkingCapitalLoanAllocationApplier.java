@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.portfolio.workingcapitalloan.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -27,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.fineract.portfolio.workingcapitalloan.data.WorkingCapitalLoanAllocationPlan;
 import org.apache.fineract.portfolio.workingcapitalloan.data.WorkingCapitalLoanAllocationPlan.ChargeAllocation;
 import org.apache.fineract.portfolio.workingcapitalloan.domain.WorkingCapitalLoanCharge;
+import org.apache.fineract.portfolio.workingcapitalloan.domain.WorkingCapitalLoanChargePaidBy;
 import org.apache.fineract.portfolio.workingcapitalloan.domain.WorkingCapitalLoanTransaction;
 import org.apache.fineract.portfolio.workingcapitalloan.domain.WorkingCapitalLoanTransactionAllocation;
 import org.springframework.stereotype.Component;
@@ -47,6 +49,25 @@ import org.springframework.stereotype.Component;
 public class WorkingCapitalLoanAllocationApplier {
 
     private final WorkingCapitalLoanChargePaymentHandler chargePaymentHandler;
+
+    public record Result(WorkingCapitalLoanTransactionAllocation allocation, List<WorkingCapitalLoanChargePaidBy> chargesPaidBy) {}
+
+    public Result apply(final WorkingCapitalLoanTransaction transaction, final WorkingCapitalLoanAllocationPlan plan,
+            final Map<Long, WorkingCapitalLoanCharge> chargesById) {
+        final List<WorkingCapitalLoanChargePaidBy> chargesPaidBy = new ArrayList<>();
+        for (final ChargeAllocation chargeAllocation : plan.chargeAllocations()) {
+            final WorkingCapitalLoanCharge charge = chargesById.get(chargeAllocation.chargeId());
+            if (charge != null) {
+                chargePaymentHandler.applyChargePayment(charge, chargeAllocation.amount());
+                chargesPaidBy.add(new WorkingCapitalLoanChargePaidBy(transaction, charge, chargeAllocation.amount()));
+            } else {
+                log.warn("WC loan allocation plan references chargeId {} not found in provided charges; skipping",
+                        chargeAllocation.chargeId());
+            }
+        }
+        final WorkingCapitalLoanTransactionAllocation allocation = applyAllocation(transaction, transaction.getAllocation(), plan);
+        return new Result(allocation, chargesPaidBy);
+    }
 
     public WorkingCapitalLoanTransactionAllocation apply(final WorkingCapitalLoanTransaction transaction,
             final WorkingCapitalLoanTransactionAllocation existingAllocation, final WorkingCapitalLoanAllocationPlan plan,

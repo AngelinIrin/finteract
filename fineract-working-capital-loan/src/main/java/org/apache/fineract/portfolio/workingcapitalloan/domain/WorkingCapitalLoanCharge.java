@@ -81,6 +81,9 @@ public class WorkingCapitalLoanCharge extends AbstractAuditableWithUTCDateTimeCu
     @Column(name = "amount_paid", scale = 6, precision = 19)
     private BigDecimal amountPaid;
 
+    @Column(name = "amount_written_off", scale = 6, precision = 19)
+    private BigDecimal amountWrittenOff = BigDecimal.ZERO;
+
     @Column(name = "is_penalty", nullable = false)
     private boolean penaltyCharge = false;
 
@@ -110,7 +113,7 @@ public class WorkingCapitalLoanCharge extends AbstractAuditableWithUTCDateTimeCu
     }
 
     public BigDecimal getAmountOutstanding() {
-        return MathUtil.subtract(getAmount(), getAmountPaid());
+        return MathUtil.subtract(getAmount(), MathUtil.add(getAmountPaid(), getAmountWrittenOff())).max(BigDecimal.ZERO);
     }
 
     public static WorkingCapitalLoanCharge build(WorkingCapitalLoan loan, ExternalId externalId, Charge charge, BigDecimal amount,

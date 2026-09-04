@@ -58,4 +58,6 @@ public interface WorkingCapitalLoanAmortizationScheduleWriteService {
      * recorded on each transaction date.
      */
     void rebuildScheduleFromPrincipalPayments(WorkingCapitalLoan loan, List<PrincipalPayment> principalPayments);
+
+    void acknowledgeElapsedPeriods(WorkingCapitalLoan loan, LocalDate businessDate);
 }

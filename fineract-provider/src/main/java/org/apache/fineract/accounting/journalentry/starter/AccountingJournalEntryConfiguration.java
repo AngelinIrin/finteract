@@ -28,6 +28,7 @@ import org.apache.fineract.accounting.journalentry.service.AccountingProcessorFo
 import org.apache.fineract.accounting.journalentry.service.AccountingProcessorForSavingsFactory;
 import org.apache.fineract.accounting.journalentry.service.AccountingProcessorForSharesFactory;
 import org.apache.fineract.accounting.journalentry.service.AccountingProcessorHelper;
+import org.apache.fineract.accounting.journalentry.service.AccountingProcessorHelperImpl;
 import org.apache.fineract.accounting.journalentry.service.CashBasedAccountingProcessorForClientTransactions;
 import org.apache.fineract.accounting.journalentry.service.JournalEntryReadPlatformService;
 import org.apache.fineract.accounting.journalentry.service.JournalEntryReadPlatformServiceImpl;
@@ -61,14 +62,14 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class AccountingJournalEntryConfiguration {
 
     @Bean
-    @ConditionalOnMissingBean(AccountingProcessorHelper.class)
-    public AccountingProcessorHelper accountingProcessorHelper(JournalEntryRepository glJournalEntryRepository,
+    @ConditionalOnMissingBean(AccountingProcessorHelperImpl.class)
+    public AccountingProcessorHelperImpl accountingProcessorHelper(JournalEntryRepository glJournalEntryRepository,
             ProductToGLAccountMappingRepository accountMappingRepository,
             FinancialActivityAccountRepositoryWrapper financialActivityAccountRepository, GLClosureRepository closureRepository,
             GLAccountRepository glAccountRepository, OfficeRepository officeRepository,
             AccountTransfersReadPlatformService accountTransfersReadPlatformService, ChargeRepositoryWrapper chargeRepositoryWrapper,
             BusinessEventNotifierService businessEventNotifierService) {
-        return new AccountingProcessorHelper(glJournalEntryRepository, accountMappingRepository, financialActivityAccountRepository,
+        return new AccountingProcessorHelperImpl(glJournalEntryRepository, accountMappingRepository, financialActivityAccountRepository,
                 closureRepository, glAccountRepository, officeRepository, accountTransfersReadPlatformService, chargeRepositoryWrapper,
                 businessEventNotifierService);
     }
@@ -89,7 +90,7 @@ public class AccountingJournalEntryConfiguration {
             GLAccountRepository glAccountRepository, JournalEntryRepository glJournalEntryRepository,
             OfficeRepositoryWrapper officeRepositoryWrapper, AccountingProcessorForLoanFactory accountingProcessorForLoanFactory,
             AccountingProcessorForSavingsFactory accountingProcessorForSavingsFactory,
-            AccountingProcessorForSharesFactory accountingProcessorForSharesFactory, AccountingProcessorHelper helper,
+            AccountingProcessorForSharesFactory accountingProcessorForSharesFactory, AccountingProcessorHelperImpl helper,
             JournalEntryCommandFromApiJsonDeserializer fromApiJsonDeserializer, AccountingRuleRepository accountingRuleRepository,
             GLAccountReadPlatformService glAccountReadPlatformService, OrganisationCurrencyRepositoryWrapper organisationCurrencyRepository,
             PlatformSecurityContext context, PaymentDetailWritePlatformService paymentDetailWritePlatformService,

@@ -285,4 +285,9 @@ public class WorkingCapitalLoanAmortizationScheduleWriteServiceImpl implements W
         }
         return null;
     }
+
+    @Override
+    public void acknowledgeElapsedPeriods(final WorkingCapitalLoan loan, final LocalDate businessDate) {
+        // No-op for elapsed periods acknowledgement
+    }
 }

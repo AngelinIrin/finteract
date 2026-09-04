@@ -70,4 +70,16 @@ public class LoanTransactionDTO {
     /** Used by accounting processors to split the fee income credit into net income + tax liability entries */
     @Setter
     private List<ChargeTaxPaymentDTO> chargeTaxPayments = new ArrayList<>();
+
+    public LoanTransactionDTO(Long officeId, Long paymentTypeId, String transactionId, LocalDate transactionDate,
+            LoanTransactionTypeDTO transactionType, BigDecimal amount, BigDecimal principal, BigDecimal interest, BigDecimal fees,
+            BigDecimal penalties, BigDecimal overPayment, boolean reversed, List<ChargePaymentDTO> penaltyPayments,
+            List<ChargePaymentDTO> feePayments, boolean isAccountTransfer, String chargeRefundChargeType,
+            LoanChargeDTO loanChargeDTO, BigDecimal principalPaid, BigDecimal feePaid, BigDecimal penaltyPaid) {
+        this(officeId, paymentTypeId, transactionId, transactionDate,
+                transactionType instanceof LoanTransactionEnumData lted ? lted
+                        : (transactionType != null ? new LoanTransactionEnumData(transactionType.getId(), transactionType.getCode(), transactionType.getValue()) : null),
+                amount, principal, interest, fees, penalties, overPayment, reversed, penaltyPayments, feePayments, isAccountTransfer,
+                chargeRefundChargeType, null, principalPaid, feePaid, penaltyPaid);
+    }
 }

@@ -47,4 +47,12 @@ public interface WorkingCapitalLoanChargeRepository
             + " oc.nameCode, lc.amount, lc.amountPaid, lc.penaltyCharge, lc.chargePaymentMode, lc.paid, l.id, lc.externalId, l.externalId) from WorkingCapitalLoanCharge lc join fetch lc.charge c join OrganisationCurrency oc on c.currencyCode = oc.code join fetch lc.loan l where l.id = :loanId and lc.active = true order by lc.chargeTimeType asc, lc.dueDate asc, lc.penaltyCharge asc")
     List<WorkingCapitalLoanChargeData> retrieveLoanCharges(@Param("loanId") Long loanId);
 
+    @Query("""
+            select case when count(c) > 0 then true else false end
+            from WorkingCapitalLoanCharge c
+            where c.loan.id = :loanId and c.active = true
+              and (c.dueDate > :dueDate or (c.dueDate = :dueDate and c.createdDate >= :createdDateTime))
+            """)
+    boolean existsActiveChargeDueOnOrAfter(@Param("loanId") Long loanId, @Param("dueDate") java.time.LocalDate dueDate,
+            @Param("createdDateTime") java.time.OffsetDateTime createdDateTime);
 }

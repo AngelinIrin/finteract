@@ -177,4 +177,84 @@ public class WorkingCapitalLoan extends AbstractAuditableWithUTCDateTimeCustom<L
     public Long getClientId() {
         return client != null ? client.getId() : null;
     }
+
+    @Setter
+    @Column(name = "is_charged_off")
+    private boolean chargedOff;
+
+    @Setter
+    @Column(name = "charged_off_on_date")
+    private LocalDate chargedOffOnDate;
+
+    @Setter
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "charged_off_userid")
+    private AppUser chargedOffBy;
+
+    @Setter
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "charge_off_reason_cv_id")
+    private org.apache.fineract.infrastructure.codes.domain.CodeValue chargeOffReason;
+
+    @Setter
+    @Column(name = "writtenoffon_date")
+    private LocalDate writtenOffOnDate;
+
+    @Setter
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "writeoff_reason_cv_id")
+    private org.apache.fineract.infrastructure.codes.domain.CodeValue writeOffReason;
+
+    @Column(name = "is_fraud")
+    private boolean fraud;
+
+    public void markAsChargedOff(final LocalDate date, final AppUser user, final org.apache.fineract.infrastructure.codes.domain.CodeValue reason) {
+        this.chargedOff = true;
+        this.chargedOffOnDate = date;
+        this.chargedOffBy = user;
+        this.chargeOffReason = reason;
+    }
+
+    public void liftChargeOff() {
+        this.chargedOff = false;
+        this.chargedOffOnDate = null;
+        this.chargedOffBy = null;
+        this.chargeOffReason = null;
+    }
+
+    public boolean isFraud() {
+        return this.fraud;
+    }
+
+    public void setFraud(final boolean fraud) {
+        this.fraud = fraud;
+    }
+
+    public boolean isClosedObligationsMet() {
+        return loanStatus != null && loanStatus.isClosedObligationsMet();
+    }
+
+    public boolean isClosedWrittenOff() {
+        return loanStatus != null && loanStatus.isClosedWrittenOff();
+    }
+
+    public boolean isOverpaid() {
+        return loanStatus != null && loanStatus.isOverpaid();
+    }
+
+    public boolean isChargedOff() {
+        return this.chargedOff;
+    }
+
+    public boolean isNotDisbursed() {
+        return loanStatus == null || loanStatus.isSubmittedAndPendingApproval() || loanStatus.isApproved();
+    }
+
+    public boolean isOpen() {
+        return loanStatus != null && loanStatus.isActive();
+    }
+
+    public boolean isActive() {
+        return loanStatus != null && loanStatus.isActive();
+    }
 }

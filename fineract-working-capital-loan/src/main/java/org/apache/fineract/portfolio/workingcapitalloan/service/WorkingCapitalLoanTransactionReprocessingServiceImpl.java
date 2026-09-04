@@ -19,6 +19,7 @@
 package org.apache.fineract.portfolio.workingcapitalloan.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -84,6 +85,19 @@ public class WorkingCapitalLoanTransactionReprocessingServiceImpl implements Wor
     public void reprocessTransactionsForChargeFreeUndo(final WorkingCapitalLoan loan) {
         final List<WorkingCapitalLoanTransaction> allTransactions = transactionRepository
                 .findByWcLoan_IdOrderByTransactionDateAscIdAsc(loan.getId());
+        reprocessTransactions(loan, allTransactions, true);
+    }
+
+    @Override
+    public void reprocessChargeFreeSuffix(final WorkingCapitalLoan loan, final LocalDate transactionDate,
+            final WorkingCapitalLoanTransaction newlyInserted) {
+        final List<WorkingCapitalLoanTransaction> allTransactions = new ArrayList<>(transactionRepository
+                .findByWcLoan_IdOrderByTransactionDateAscIdAsc(loan.getId()));
+        if (newlyInserted != null && !allTransactions.contains(newlyInserted)) {
+            allTransactions.add(newlyInserted);
+            allTransactions.sort(Comparator.comparing(WorkingCapitalLoanTransaction::getTransactionDate)
+                    .thenComparing(WorkingCapitalLoanTransaction::getId, Comparator.nullsLast(Comparator.naturalOrder())));
+        }
         reprocessTransactions(loan, allTransactions, true);
     }
 

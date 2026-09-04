@@ -20,6 +20,7 @@ package org.apache.fineract.commands.service;
 
 import java.util.List;
 import org.apache.fineract.commands.data.AuditData;
+import org.apache.fineract.commands.data.request.AuditRequest;
 import org.apache.fineract.commands.data.AuditSearchData;
 import org.apache.fineract.infrastructure.core.data.PaginationParameters;
 import org.apache.fineract.infrastructure.core.service.Page;
@@ -36,4 +37,49 @@ public interface AuditReadPlatformService {
     AuditData retrieveAuditEntry(Long auditId);
 
     AuditSearchData retrieveSearchTemplate(String useType);
+
+    default SQLBuilder getExtraCriteria(AuditRequest auditRequest) {
+        SQLBuilder extraCriteria = new SQLBuilder();
+        extraCriteria.addNonNullCriteria("aud.action_name = ", auditRequest.getActionName());
+        if (auditRequest.getEntityName() != null) {
+            extraCriteria.addCriteria("aud.entity_name like", auditRequest.getEntityName() + "%");
+        }
+        extraCriteria.addNonNullCriteria("aud.resource_id = ", auditRequest.getResourceId());
+        extraCriteria.addNonNullCriteria("aud.maker_id = ", auditRequest.getMakerId());
+        extraCriteria.addNonNullCriteria("aud.checker_id = ", auditRequest.getCheckerId());
+        if (auditRequest.getMakerDateTimeFrom() != null) {
+            extraCriteria.addSubOperation((SQLBuilder criteria) -> {
+                criteria.addNonNullCriteria("aud.made_on_date >= ", auditRequest.getMakerDateTimeFrom(),
+                        SQLBuilder.WhereLogicalOperator.NONE);
+                criteria.addNonNullCriteria("aud.made_on_date_utc >= ", auditRequest.getMakerDateTimeFrom(),
+                        SQLBuilder.WhereLogicalOperator.OR);
+            });
+        }
+        if (auditRequest.getMakerDateTimeTo() != null) {
+            extraCriteria.addSubOperation((SQLBuilder criteria) -> {
+                criteria.addNonNullCriteria("aud.made_on_date <= ", auditRequest.getMakerDateTimeTo(),
+                        SQLBuilder.WhereLogicalOperator.NONE);
+                criteria.addNonNullCriteria("aud.made_on_date_utc <= ", auditRequest.getMakerDateTimeTo(),
+                        SQLBuilder.WhereLogicalOperator.OR);
+            });
+        }
+        if (auditRequest.getCheckerDateTimeFrom() != null) {
+            extraCriteria.addSubOperation((SQLBuilder criteria) -> {
+                criteria.addNonNullCriteria("aud.checked_on_date >= ", auditRequest.getCheckerDateTimeFrom(),
+                        SQLBuilder.WhereLogicalOperator.NONE);
+                criteria.addNonNullCriteria("aud.checked_on_date_utc >= ", auditRequest.getCheckerDateTimeFrom(),
+                        SQLBuilder.WhereLogicalOperator.OR);
+            });
+        }
+        if (auditRequest.getCheckerDateTimeTo() != null) {
+            extraCriteria.addSubOperation((SQLBuilder criteria) -> {
+                criteria.addNonNullCriteria("aud.checked_on_date <= ", auditRequest.getCheckerDateTimeTo(),
+                        SQLBuilder.WhereLogicalOperator.NONE);
+                criteria.addNonNullCriteria("aud.checked_on_date_utc <= ", auditRequest.getCheckerDateTimeTo(),
+                        SQLBuilder.WhereLogicalOperator.OR);
+            });
+        }
+        extraCriteria.addNonNullCriteria("aud.status = ", auditRequest.getStatus());
+        return extraCriteria;
+    }
 }

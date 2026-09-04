@@ -21,9 +21,13 @@ package org.apache.fineract.portfolio.floatingrates.data;
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Locale;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.fineract.infrastructure.core.serialization.JsonParserHelper;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 
 @Data
 @NoArgsConstructor
@@ -38,5 +42,16 @@ public class FloatingRatePeriodRequest implements Serializable {
     private Boolean isDifferentialToBaseLendingRate;
     private String locale;
     private String dateFormat;
+
+    public LocalDate fromDateAsLocalDate() {
+        if (this.fromDate == null) {
+            return null;
+        }
+        if (this.dateFormat == null) {
+            return DateUtils.parseLocalDate(this.fromDate);
+        }
+        final Locale clientLocale = this.locale == null ? null : JsonParserHelper.localeFromString(this.locale);
+        return DateUtils.parseLocalDate(this.fromDate, this.dateFormat, clientLocale);
+    }
 
 }

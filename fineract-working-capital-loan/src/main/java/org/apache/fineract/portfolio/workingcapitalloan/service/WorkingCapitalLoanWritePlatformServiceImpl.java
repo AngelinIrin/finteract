@@ -711,6 +711,11 @@ public class WorkingCapitalLoanWritePlatformServiceImpl implements WorkingCapita
         return makeRepaymentLikeTransaction(loanId, command, LoanTransactionType.REPAYMENT);
     }
 
+    @Override
+    public CommandProcessingResult makePayoutRefund(final Long loanId, final JsonCommand command) {
+        return makeRepaymentLikeTransaction(loanId, command, LoanTransactionType.PAYOUT_REFUND);
+    }
+
     private CommandProcessingResult makeRepaymentLikeTransaction(final Long loanId, final JsonCommand command,
             final LoanTransactionType transactionType) {
         final WorkingCapitalLoan loan = this.loanRepository.findById(loanId)

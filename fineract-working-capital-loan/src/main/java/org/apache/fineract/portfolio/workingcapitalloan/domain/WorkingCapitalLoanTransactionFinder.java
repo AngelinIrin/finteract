@@ -145,6 +145,8 @@ public class WorkingCapitalLoanTransactionFinder {
     private Optional<TransactionDateAndAmountHolder> findLastActiveTransactionOfTypes(final Long loanId,
             final List<LoanTransactionType> transactionTypes) {
         return transactionRepository.findActiveByTypesOrderByDateDesc(loanId, transactionTypes, PageRequest.of(0, 1)) //
-                .stream().findFirst();
+                .stream()
+                .map(t -> new TransactionDateAndAmountHolder(t.getTransactionDate(), t.getTransactionAmount()))
+                .findFirst();
     }
 }

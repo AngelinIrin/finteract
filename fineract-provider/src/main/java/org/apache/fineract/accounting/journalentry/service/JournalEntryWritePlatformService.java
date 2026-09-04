@@ -54,6 +54,10 @@ public interface JournalEntryWritePlatformService {
 
     void revertShareAccountJournalEntries(ArrayList<Long> transactionId, LocalDate transactionDate);
 
+    default void createJournalEntriesForLoanTransaction(AccountingBridgeDataDTO accountingBridgeDataDTO, boolean isLoanToLoanTransfer) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Create journal entries immediately for a single loan transaction
      *
@@ -64,7 +68,9 @@ public interface JournalEntryWritePlatformService {
      * @param isLoanToLoanTransfer
      *            whether this is a loan-to-loan transfer transaction
      */
-    void createJournalEntriesForLoanTransaction(LoanTransaction loanTransaction, boolean isAccountTransfer, boolean isLoanToLoanTransfer);
+    default void createJournalEntriesForLoanTransaction(LoanTransaction loanTransaction, boolean isAccountTransfer, boolean isLoanToLoanTransfer) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Create journal entries immediately for an external owner transfer
@@ -76,7 +82,8 @@ public interface JournalEntryWritePlatformService {
      * @param previousOwner
      *            the previous owner (can be null for initial transfers)
      */
-    void createJournalEntriesForExternalOwnerTransfer(Loan loan, ExternalAssetOwnerTransfer externalAssetOwnerTransfer,
-            ExternalAssetOwner previousOwner);
-
+    default void createJournalEntriesForExternalOwnerTransfer(Loan loan, ExternalAssetOwnerTransfer externalAssetOwnerTransfer,
+            ExternalAssetOwner previousOwner) {
+        throw new UnsupportedOperationException();
+    }
 }

@@ -20,6 +20,8 @@ package org.apache.fineract.portfolio.workingcapitalloan.mapper;
 
 import java.time.LocalDate;
 import java.util.List;
+import org.apache.fineract.infrastructure.codes.data.CodeValueData;
+import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.apache.fineract.infrastructure.core.config.MapstructMapperConfig;
 import org.apache.fineract.infrastructure.core.data.StringEnumOptionData;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
@@ -95,6 +97,7 @@ public interface WorkingCapitalLoanMapper {
     @Mapping(target = "originators", ignore = true)
     @Mapping(target = "fraud", ignore = true)
     @Mapping(target = "chargedOff", ignore = true)
+    @Mapping(target = "chargeOffReason", source = "chargeOffReason", qualifiedByName = "codeValueToData")
     WorkingCapitalLoanData toData(WorkingCapitalLoan loan);
 
     List<WorkingCapitalLoanData> toDataList(List<WorkingCapitalLoan> loans);

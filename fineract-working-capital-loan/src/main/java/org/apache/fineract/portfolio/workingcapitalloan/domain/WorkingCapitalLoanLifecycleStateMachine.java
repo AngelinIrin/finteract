@@ -35,6 +35,22 @@ public class WorkingCapitalLoanLifecycleStateMachine {
         }
     }
 
+    public void transition(final WorkingCapitalLoanEvent event, final WorkingCapitalLoan loan, final java.time.LocalDate date) {
+        transition(event, loan);
+    }
+
+    public void determineAndTransition(final WorkingCapitalLoan loan, final java.time.LocalDate transactionDate) {
+        if (loan.getBalance() != null) {
+            if (loan.getBalance().isOverpaid()) {
+                loan.setLoanStatus(LoanStatus.OVERPAID);
+            } else if (loan.getBalance().isPaidInFull()) {
+                loan.setLoanStatus(LoanStatus.CLOSED_OBLIGATIONS_MET);
+            } else if (loan.getLoanStatus() != null && !loan.getLoanStatus().isActive() && !loan.getLoanStatus().isClosedWrittenOff()) {
+                loan.setLoanStatus(LoanStatus.ACTIVE);
+            }
+        }
+    }
+
     public boolean canTransition(final WorkingCapitalLoanEvent event, final WorkingCapitalLoan loan) {
         return getNextStatus(event, loan) != null;
     }
@@ -55,6 +71,8 @@ public class WorkingCapitalLoanLifecycleStateMachine {
             case LOAN_OVERPAID -> (from.isActive() || from.isClosedObligationsMet() || from.isOverpaid()) ? LoanStatus.OVERPAID : null;
             case LOAN_REOPENED -> (from.isOverpaid() || from.isClosedObligationsMet()) ? LoanStatus.ACTIVE : null;
             case LOAN_CREDIT_BALANCE_REFUND_IN_FULL -> from.isOverpaid() ? LoanStatus.CLOSED_OBLIGATIONS_MET : null;
+            case LOAN_WRITTEN_OFF -> from.isActive() ? LoanStatus.CLOSED_WRITTEN_OFF : null;
+            case LOAN_WRITTEN_OFF_UNDO -> from.isClosedWrittenOff() ? LoanStatus.ACTIVE : null;
         };
     }
 }
